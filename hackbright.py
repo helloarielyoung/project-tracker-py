@@ -67,9 +67,6 @@ def get_project_by_title(title):
 def get_grade_by_github_title(github, title):
     """Print grade student received for a project."""
 
-    #I notice a design flaw here - database allows multiple grades on same
-    #project for same github, but this query returns only one
-
     QUERY = """
         SELECT first_name, last_name, grade, project_title
             FROM students s
@@ -79,8 +76,9 @@ def get_grade_by_github_title(github, title):
             """
     db_cursor = db.session.execute(QUERY, {'github': github,
                                            'title': title})
-    row = db_cursor.fetchone()
-    print "%s %s recieved a %d on %s" % (row[0], row[1], row[2], row[3])
+    rows = db_cursor.fetchall()
+    for row in rows:
+        print "%s %s recieved a %d on %s" % (row[0], row[1], row[2], row[3])
 
 
 def assign_grade(github, title, grade):
@@ -94,6 +92,21 @@ def assign_grade(github, title, grade):
     db.session.execute(QUERY, {'github': github,
                                'title': title,
                                'grade': grade})
+
+    db.session.commit()
+
+
+def add_project(title, description, max_grade):
+    """Add a project"""
+
+    QUERY = """
+        INSERT INTO projects (title, description, max_grade)
+            VALUES (:title, :description, :max_grade)
+            """
+
+    db.session.execute(QUERY, {'title': title,
+                               'description': description,
+                               'max_grade': max_grade})
 
     db.session.commit()
 
@@ -134,6 +147,12 @@ def handle_input():
             title = args[1]
             grade = args[2]
             assign_grade(github, title, grade)
+
+        elif command == "add_project":
+            title = args[0]
+            description = " ".join(args[1:-1])
+            max_grade = args[-1]
+            add_project(title, description, max_grade)
 
         else:
             if command != "quit":
