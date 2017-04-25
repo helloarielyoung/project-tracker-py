@@ -67,6 +67,9 @@ def get_project_by_title(title):
 def get_grade_by_github_title(github, title):
     """Print grade student received for a project."""
 
+    #I notice a design flaw here - database allows multiple grades on same
+    #project for same github, but this query returns only one
+
     QUERY = """
         SELECT first_name, last_name, grade, project_title
             FROM students s
@@ -82,7 +85,17 @@ def get_grade_by_github_title(github, title):
 
 def assign_grade(github, title, grade):
     """Assign a student a grade on an assignment and print a confirmation."""
-    pass
+
+    QUERY = """
+        INSERT INTO grades (student_github, project_title, grade)
+            VALUES (:github, :title, :grade)
+            """
+
+    db.session.execute(QUERY, {'github': github,
+                               'title': title,
+                               'grade': grade})
+
+    db.session.commit()
 
 
 def handle_input():
@@ -107,6 +120,21 @@ def handle_input():
             first_name, last_name, github = args   # unpack!
             make_new_student(first_name, last_name, github)
 
+        elif command == "project_title":
+            title = args[0]
+            get_project_by_title(title)
+
+        elif command == "grade_github_title":
+            github = args[0]
+            title = args[1]
+            get_grade_by_github_title(github, title)
+
+        elif command == "assign_grade":
+            github = args[0]
+            title = args[1]
+            grade = args[2]
+            assign_grade(github, title, grade)
+
         else:
             if command != "quit":
                 print "Invalid Entry. Try again."
@@ -115,6 +143,6 @@ if __name__ == "__main__":
     app = Flask(__name__)
     connect_to_db(app)
 
-    #handle_input()
+    handle_input()
 
     db.session.close()
