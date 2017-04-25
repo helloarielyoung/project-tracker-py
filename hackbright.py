@@ -49,6 +49,8 @@ def make_new_student(first_name, last_name, github):
 
     db.session.commit()
 
+    print "Added student: %s %s with github ID %s" % (first_name, last_name, github)
+
 
 def get_project_by_title(title):
     """Given a project title, print information about the project."""
@@ -95,6 +97,8 @@ def assign_grade(github, title, grade):
 
     db.session.commit()
 
+    print "Assigned grade %s to github ID %s for project %s" % (grade, github, title)
+
 
 def add_project(title, description, max_grade):
     """Add a project"""
@@ -106,9 +110,27 @@ def add_project(title, description, max_grade):
 
     db.session.execute(QUERY, {'title': title,
                                'description': description,
-                               'max_grade': max_grade})
+                               'max_grade': int(max_grade)})
 
     db.session.commit()
+
+    print "Added project %s - %s, with maximum grade of %s" % (title, description, max_grade)
+
+
+def get_all_student_grades(github):
+    """Given a github ID, displays all student grades"""
+
+    QUERY = """
+        SELECT first_name, last_name, grade, project_title
+            FROM students s
+            JOIN grades g ON s.github = g.student_github
+        WHERE s.github = :github
+        ORDER BY project_title, grade
+            """
+    db_cursor = db.session.execute(QUERY, {'github': github})
+    rows = db_cursor.fetchall()
+    for row in rows:
+        print "%s %s recieved a %d on %s" % (row[0], row[1], row[2], row[3])
 
 
 def handle_input():
@@ -153,6 +175,10 @@ def handle_input():
             description = " ".join(args[1:-1])
             max_grade = args[-1]
             add_project(title, description, max_grade)
+
+        elif command == "all_grades":
+            github = args[0]
+            get_all_student_grades(github)
 
         else:
             if command != "quit":
